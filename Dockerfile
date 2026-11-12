@@ -1,6 +1,6 @@
-FROM python:3.11-slim
+FROM ://microsoft.com
 WORKDIR /app
 COPY . .
-RUN pip install requests playwright && playwright install --with-deps chromium
+RUN pip install requests
 EXPOSE 8000
 CMD ["python", "bot.py"]
