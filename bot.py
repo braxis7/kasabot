@@ -9,7 +9,7 @@ BOT_TOKEN = "9240133902:AAEeLcTrMRJpplBBlRrNRxjHFwEDKS5ctlY"
 CHAT_ID = "5813357047"
 SITE_URL = "https://winningcircle.io" + "/panel/canlicuzdan"
 
-OTURUM_JSON = '''{"ls":{"guestId":"60227","app_uuid":"b78970a2-f31c-462f-b4dd-9edff87a7be3","wca-theme":"dark"},"ck":"wc_language=TR; wc_language_manual=1; g_state={\"i_l\":0,\"i_ll\":1793722019395,\"i_b\":\"V3MYMzvenIxvZBkOD6B2+4zDidMG6/wQOEvXhzbQ13U\",\"i_e\":{\"enable_itp_optimization\":24},\"i_et\":1793722019395}"}'''
+OTURUM_JSON = '''BURAYA_OTURUM_ANAHTARINI_YAPISTIR'''
 
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -43,14 +43,12 @@ def islemleri_oku(page):
     aktif_cuzdan = "Genel"
     
     for i, satir in enumerate(satirlar):
-        # Gecmis islemler bolumune gelince dur (sadece acik islemleri al)
         if "Geçmiş İşlemler" in satir or "Geçmiş işlemler" in satir:
             break
             
         if satir in ["Efe Bulduk", "Oslo Bot"] or ("Bot" in satir and len(satir) < 25):
             aktif_cuzdan = satir
             
-        # Acik islemlerde coin adinin hemen altinda "SWAP" yazar
         if satir.upper() == "SWAP" and i > 0:
             coin = satirlar[i - 1]
             yon = ""
@@ -121,11 +119,6 @@ with sync_playwright() as p:
                     if eski_islem not in guncel_set:
                         gonder(f"🛑 İŞLEM KAPATILDI!\n\n{eski_islem}\n\n🔗 {SITE_URL}")
                 bilinen_islemler = guncel_set
-        except Exception as e:
-            print("Kontrol hatasi:", e)
-        time.sleep(20)
-
-                
         except Exception as e:
             print("Kontrol hatasi:", e)
         time.sleep(20)
