@@ -6,7 +6,7 @@ from playwright.sync_api import sync_playwright
 
 BOT_TOKEN = "9240133902:AAEeLcTrMRJpplBBlRrNRxjHFwEDKS5ctlY"
 CHAT_ID = "5813357047"
-SITE_URL = "https://winningcircle.io" + "/panel/canlicuzdan"
+SITE_URL = "https://www.winningcircle.io" + "/panel/canlicuzdan"
 
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -35,17 +35,17 @@ def islemleri_oku(page):
     for i, satir in enumerate(satirlar):
         if satir in ["Efe Bulduk", "Oslo Bot"] or "Bot" in satir:
             aktif_cuzdan = satir
-        if satir == "TICKER" and i + 1 < len(satirlar):
+        if satir.upper() == "TICKER" and i + 1 < len(satirlar):
             coin = satirlar[i + 1]
             yon = ""
             giris = ""
             for j in range(i, min(i + 10, len(satirlar))):
-                if satirlar[j] in ["LONG", "SHORT"]:
-                    yon = satirlar[j]
-                if satirlar[j] == "GİRİŞ" and j + 1 < len(satirlar):
+                if satirlar[j].upper() in ["LONG", "SHORT"]:
+                    yon = satirlar[j].upper()
+                if satirlar[j].upper() == "GİRİŞ" and j + 1 < len(satirlar):
                     giris = satirlar[j + 1]
             islemler.append(f"👤 {aktif_cuzdan} | 🪙 {coin} | 📊 {yon} | 💰 Giriş: {giris}")
-    return islemler
+    return islemler, metin[:350]
 
 with sync_playwright() as p:
     b = p.chromium.launch(
@@ -58,15 +58,20 @@ with sync_playwright() as p:
     page.goto(SITE_URL, wait_until="domcontentloaded", timeout=60000)
     time.sleep(15)
     
-    bilinen_islemler = set(islemleri_oku(page))
-    mevcut_liste = "\n".join(bilinen_islemler) if bilinen_islemler else "Henüz açık işlem okunamadı."
-    gonder(f"✅ WinningCircle 7/24 Akıllı Takip Başladı!\n\nŞu Anki Açık İşlemler:\n{mevcut_liste}")
+    okunanlar, onizleme = islemleri_oku(page)
+    bilinen_islemler = set(okunanlar)
+    
+    if bilinen_islemler:
+        mevcut_liste = "\n".join(bilinen_islemler)
+        gonder(f"✅ WinningCircle 7/24 Akıllı Takip Başladı!\n\nŞu Anki Açık İşlemler:\n{mevcut_liste}")
+    else:
+        gonder(f"⚠️ İşlem bulunamadı. Botun sayfada gördüğü yazı:\n\n{onizleme}")
 
     while True:
         try:
             page.reload(wait_until="domcontentloaded", timeout=60000)
             time.sleep(12)
-            guncel_islemler = islemleri_oku(page)
+            guncel_islemler, _ = islemleri_oku(page)
             for islem in guncel_islemler:
                 if islem not in bilinen_islemler:
                     gonder(f"🚨 YENİ SİNYAL / İŞLEM TESPİT EDİLDİ!\n\n{islem}\n\n🔗 {SITE_URL}")
