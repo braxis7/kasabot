@@ -48,26 +48,31 @@ def islemleri_oku(page):
     return islemler
 
 with sync_playwright() as p:
-    b = p.chromium.launch(headless=True)
+    # Render 512MB RAM siniri icin dusuk bellek modunda tarayici baslatma
+    b = p.chromium.launch(
+        headless=True,
+        args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu", "--single-process"]
+    )
     page = b.new_page()
-    page.goto(SITE_URL, wait_until="networkidle")
-    time.sleep(5)
+    # RAM tasarrufu icin resimleri ve fontlari engelle
+    page.route("**/*.{png,jpg,jpeg,gif,webp,svg,woff,woff2}", lambda route: route.abort())
+    
+    page.goto(SITE_URL, wait_until="domcontentloaded", timeout=60000)
+    time.sleep(6)
     
     bilinen_islemler = set(islemleri_oku(page))
     mevcut_liste = "\n".join(bilinen_islemler) if bilinen_islemler else "Henüz açık işlem okunamadı."
-    gonder(f"✅ WinningCircle Akıllı Takip Başladı!\n\nŞu Anki Açık İşlemler:\n{mevcut_liste}")
+    gonder(f"✅ WinningCircle 7/24 Akıllı Takip Başladı!\n\nŞu Anki Açık İşlemler:\n{mevcut_liste}")
 
     while True:
         try:
-            page.reload(wait_until="networkidle")
-            time.sleep(4)
+            page.reload(wait_until="domcontentloaded", timeout=60000)
+            time.sleep(5)
             guncel_islemler = islemleri_oku(page)
             for islem in guncel_islemler:
                 if islem not in bilinen_islemler:
                     gonder(f"🚨 YENİ SİNYAL / İŞLEM TESPİT EDİLDİ!\n\n{islem}\n\n🔗 {SITE_URL}")
-                    bilinen_islemler.add(islem)
-            # Kapanan işlemler olursa hafızadan temizle ki tekrar açılırsa bildirim gelsin
             bilinen_islemler = set(guncel_islemler)
         except Exception as e:
             print("Kontrol hatasi:", e)
-        time.sleep(15)
+        time.sleep(20)
