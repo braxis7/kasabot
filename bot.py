@@ -56,7 +56,7 @@ with sync_playwright() as p:
     page.route("**/*.{png,jpg,jpeg,gif,webp,svg,woff,woff2}", lambda route: route.abort())
     
     page.goto(SITE_URL, wait_until="domcontentloaded", timeout=60000)
-    time.sleep(6)
+    time.sleep(15)
     
     bilinen_islemler = set(islemleri_oku(page))
     mevcut_liste = "\n".join(bilinen_islemler) if bilinen_islemler else "Henüz açık işlem okunamadı."
@@ -65,7 +65,7 @@ with sync_playwright() as p:
     while True:
         try:
             page.reload(wait_until="domcontentloaded", timeout=60000)
-            time.sleep(5)
+            time.sleep(12)
             guncel_islemler = islemleri_oku(page)
             for islem in guncel_islemler:
                 if islem not in bilinen_islemler:
