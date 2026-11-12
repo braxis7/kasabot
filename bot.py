@@ -35,24 +35,34 @@ def gonder(msg):
 
 def islemleri_oku(page):
     metin = page.locator("body").inner_text()
+    if "Giriş bilgilerinizi doldurunuz" in metin:
+        return None, "OTURUM_DUSTU"
+    
     satirlar = [s.strip() for s in metin.splitlines() if s.strip()]
-    islemler = []
+    acik_islemler = []
     aktif_cuzdan = "Genel"
     
     for i, satir in enumerate(satirlar):
-        if satir in ["Efe Bulduk", "Oslo Bot"] or "Bot" in satir:
+        # Gecmis islemler bolumune gelince dur (sadece acik islemleri al)
+        if "Geçmiş İşlemler" in satir or "Geçmiş işlemler" in satir:
+            break
+            
+        if satir in ["Efe Bulduk", "Oslo Bot"] or ("Bot" in satir and len(satir) < 25):
             aktif_cuzdan = satir
-        if satir.upper() == "TICKER" and i + 1 < len(satirlar):
-            coin = satirlar[i + 1]
+            
+        # Acik islemlerde coin adinin hemen altinda "SWAP" yazar
+        if satir.upper() == "SWAP" and i > 0:
+            coin = satirlar[i - 1]
             yon = ""
             giris = ""
-            for j in range(i, min(i + 10, len(satirlar))):
+            for j in range(i, min(i + 12, len(satirlar))):
                 if satirlar[j].upper() in ["LONG", "SHORT"]:
                     yon = satirlar[j].upper()
                 if satirlar[j].upper() == "GİRİŞ" and j + 1 < len(satirlar):
                     giris = satirlar[j + 1]
-            islemler.append(f"👤 {aktif_cuzdan} | 🪙 {coin} | 📊 {yon} | 💰 Giriş: {giris}")
-    return islemler
+            acik_islemler.append(f"👤 {aktif_cuzdan} | 🪙 {coin} | 📊 {yon} | 💰 Giriş: {giris}")
+            
+    return acik_islemler, "OK"
 
 with sync_playwright() as p:
     b = p.chromium.launch(
@@ -81,30 +91,40 @@ with sync_playwright() as p:
     page.route("**/*.{png,jpg,jpeg,gif,webp,svg,woff,woff2}", lambda route: route.abort())
     
     page.goto(SITE_URL, wait_until="domcontentloaded", timeout=60000)
-    time.sleep(15)
+    time.sleep(10)
+    page.reload(wait_until="domcontentloaded", timeout=60000)
+    time.sleep(12)
     
-    okunanlar = islemleri_oku(page)
-    bilinen_islemler = set(okunanlar)
-    mevcut_liste = "\n".join(bilinen_islemler) if bilinen_islemler else "Henüz açık işlem okunamadı."
-    gonder(f"✅ WinningCircle 7/24 Akıllı Takip Başladı!\n\nŞu Anki Açık İşlemler:\n{mevcut_liste}")
+    okunanlar, durum = islemleri_oku(page)
+    
+    if durum == "OTURUM_DUSTU":
+        gonder("⚠️ UYARI: Bulut sunucuda oturum açılmadı (Giriş ekranında kaldı)! Oturum anahtarını güncellememiz gerekiyor.")
+        bilinen_islemler = set()
+    else:
+        bilinen_islemler = set(okunanlar)
+        mevcut_liste = "\n".join(bilinen_islemler) if bilinen_islemler else "Şu an açık işlem yok."
+        gonder(f"✅ WinningCircle 7/24 Takip Başladı!\n\nŞu Anki Açık İşlemler:\n{mevcut_liste}")
 
     while True:
         try:
             page.reload(wait_until="domcontentloaded", timeout=60000)
             time.sleep(12)
-            guncel_set = set(islemleri_oku(page))
+            guncel_liste, durum = islemleri_oku(page)
             
-            # Yeni acilan islemleri bildir
-            for islem in guncel_set:
-                if islem not in bilinen_islemler:
-                    gonder(f"🚨 YENİ SİNYAL / İŞLEM AÇILDI!\n\n{islem}\n\n🔗 {SITE_URL}")
-            
-            # Kapatilan islemleri bildir (Sayfa bos yuklenmediyse)
-            if len(guncel_set) > 0 or len(bilinen_islemler) == 1:
+            if durum == "OK":
+                guncel_set = set(guncel_liste)
+                for islem in guncel_set:
+                    if islem not in bilinen_islemler:
+                        gonder(f"🚨 YENİ SİNYAL / İŞLEM AÇILDI!\n\n{islem}\n\n🔗 {SITE_URL}")
+                
                 for eski_islem in bilinen_islemler:
                     if eski_islem not in guncel_set:
                         gonder(f"🛑 İŞLEM KAPATILDI!\n\n{eski_islem}\n\n🔗 {SITE_URL}")
                 bilinen_islemler = guncel_set
+        except Exception as e:
+            print("Kontrol hatasi:", e)
+        time.sleep(20)
+
                 
         except Exception as e:
             print("Kontrol hatasi:", e)
