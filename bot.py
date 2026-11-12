@@ -9,7 +9,7 @@ BOT_TOKEN = "9240133902:AAEeLcTrMRJpplBBlRrNRxjHFwEDKS5ctlY"
 CHAT_ID = "5813357047"
 SITE_URL = "https://winningcircle.io" + "/panel/canlicuzdan"
 
-OTURUM_JSON = '''BURAYA_YAPISTIR'''
+OTURUM_JSON = '''{"ls":{"guestId":"60227","app_uuid":"b78970a2-f31c-462f-b4dd-9edff87a7be3","wca-theme":"dark"},"ck":"wc_language=TR; wc_language_manual=1; g_state={\"i_l\":0,\"i_ll\":1793722019395,\"i_b\":\"V3MYMzvenIxvZBkOD6B2+4zDidMG6/wQOEvXhzbQ13U\",\"i_e\":{\"enable_itp_optimization\":24},\"i_et\":1793722019395}"}'''
 
 class HealthHandler(BaseHTTPRequestHandler):
     def do_GET(self):
