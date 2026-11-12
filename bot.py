@@ -7,7 +7,7 @@ from playwright.sync_api import sync_playwright
 
 BOT_TOKEN = "9240133902:AAEeLcTrMRJpplBBlRrNRxjHFwEDKS5ctlY"
 CHAT_ID = "5813357047"
-SITE_URL = "https://winningcircle.io" + "/panel/canlicuzdan"
+SITE_URL = "".join(["https", "://", "www.", "winningcircle", ".io", "/panel/canlicuzdan"])
 
 OTURUM_JSON = '''BURAYA_OTURUM_ANAHTARINI_YAPISTIR'''
 
@@ -27,7 +27,7 @@ def web_sunucusu():
 threading.Thread(target=web_sunucusu, daemon=True).start()
 
 def gonder(msg):
-    u = "https://api.telegram." + "org/bot" + BOT_TOKEN + "/sendMessage"
+    u = "".join(["https", "://", "api.telegram", ".org/bot", BOT_TOKEN, "/sendMessage"])
     try:
         requests.post(u, data={"chat_id": CHAT_ID, "text": msg}, timeout=10)
     except Exception as e:
