@@ -36,31 +36,33 @@ def gonder(msg):
 def islemleri_oku(page):
     metin = page.locator("body").inner_text()
     if "Giriş bilgilerinizi doldurunuz" in metin:
-        return None, "OTURUM_DUSTU"
+        return None, "OTURUM_DUSTU", metin[:300]
     
     satirlar = [s.strip() for s in metin.splitlines() if s.strip()]
     acik_islemler = []
     aktif_cuzdan = "Genel"
     
     for i, satir in enumerate(satirlar):
-        if "Geçmiş İşlemler" in satir or "Geçmiş işlemler" in satir:
+        if "geçmiş işlem" in satir.lower():
             break
             
         if satir in ["Efe Bulduk", "Oslo Bot"] or ("Bot" in satir and len(satir) < 25):
             aktif_cuzdan = satir
             
-        if satir.upper() == "SWAP" and i > 0:
-            coin = satirlar[i - 1]
+        if "-USDT" in satir.upper() and len(satir) < 20:
+            coin = satir.upper()
             yon = ""
             giris = ""
-            for j in range(i, min(i + 12, len(satirlar))):
+            for j in range(i, min(i + 15, len(satirlar))):
                 if satirlar[j].upper() in ["LONG", "SHORT"]:
                     yon = satirlar[j].upper()
                 if satirlar[j].upper() == "GİRİŞ" and j + 1 < len(satirlar):
                     giris = satirlar[j + 1]
-            acik_islemler.append(f"👤 {aktif_cuzdan} | 🪙 {coin} | 📊 {yon} | 💰 Giriş: {giris}")
-            
-    return acik_islemler, "OK"
+            kayit = f"👤 {aktif_cuzdan} | 🪙 {coin} | 📊 {yon} | 💰 Giriş: {giris}"
+            if kayit not in acik_islemler:
+                acik_islemler.append(kayit)
+                
+    return acik_islemler, "OK", metin[:450]
 
 with sync_playwright() as p:
     b = p.chromium.launch(
@@ -86,28 +88,29 @@ with sync_playwright() as p:
         print("Oturum yukleme hatasi:", e)
 
     page = context.new_page()
-    page.route("**/*.{png,jpg,jpeg,gif,webp,svg,woff,woff2}", lambda route: route.abort())
-    
     page.goto(SITE_URL, wait_until="domcontentloaded", timeout=60000)
-    time.sleep(10)
-    page.reload(wait_until="domcontentloaded", timeout=60000)
     time.sleep(12)
+    page.reload(wait_until="domcontentloaded", timeout=60000)
+    time.sleep(15)
     
-    okunanlar, durum = islemleri_oku(page)
+    okunanlar, durum, onizleme = islemleri_oku(page)
     
     if durum == "OTURUM_DUSTU":
-        gonder("⚠️ UYARI: Bulut sunucuda oturum açılmadı (Giriş ekranında kaldı)! Oturum anahtarını güncellememiz gerekiyor.")
+        gonder("⚠️ Oturum açılmadı (Giriş ekranında kaldı)! Oturum anahtarını güncellememiz gerekiyor.")
         bilinen_islemler = set()
     else:
         bilinen_islemler = set(okunanlar)
-        mevcut_liste = "\n".join(bilinen_islemler) if bilinen_islemler else "Şu an açık işlem yok."
-        gonder(f"✅ WinningCircle 7/24 Takip Başladı!\n\nŞu Anki Açık İşlemler:\n{mevcut_liste}")
+        if bilinen_islemler:
+            mevcut_liste = "\n".join(bilinen_islemler)
+            gonder(f"✅ WinningCircle 7/24 Takip Başladı!\n\nŞu Anki Açık İşlemler:\n{mevcut_liste}")
+        else:
+            gonder(f"⚠️ Açık işlem bulunamadı. Botun sayfada gördüğü metin:\n\n{onizleme}")
 
     while True:
         try:
             page.reload(wait_until="domcontentloaded", timeout=60000)
-            time.sleep(12)
-            guncel_liste, durum = islemleri_oku(page)
+            time.sleep(15)
+            guncel_liste, durum, _ = islemleri_oku(page)
             
             if durum == "OK":
                 guncel_set = set(guncel_liste)
