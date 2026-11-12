@@ -17,6 +17,10 @@ class HealthHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"Bot Aktif")
 
+    def do_HEAD(self):
+        self.send_response(200)
+        self.end_headers()
+
 def web_sunucusu():
     HTTPServer(("0.0.0.0", 8000), HealthHandler).serve_forever()
 
@@ -88,11 +92,20 @@ with sync_playwright() as p:
         try:
             page.reload(wait_until="domcontentloaded", timeout=60000)
             time.sleep(12)
-            guncel_islemler = islemleri_oku(page)
-            for islem in guncel_islemler:
+            guncel_set = set(islemleri_oku(page))
+            
+            # Yeni acilan islemleri bildir
+            for islem in guncel_set:
                 if islem not in bilinen_islemler:
-                    gonder(f"🚨 YENİ SİNYAL / İŞLEM TESPİT EDİLDİ!\n\n{islem}\n\n🔗 {SITE_URL}")
-            bilinen_islemler = set(guncel_islemler)
+                    gonder(f"🚨 YENİ SİNYAL / İŞLEM AÇILDI!\n\n{islem}\n\n🔗 {SITE_URL}")
+            
+            # Kapatilan islemleri bildir (Sayfa bos yuklenmediyse)
+            if len(guncel_set) > 0 or len(bilinen_islemler) == 1:
+                for eski_islem in bilinen_islemler:
+                    if eski_islem not in guncel_set:
+                        gonder(f"🛑 İŞLEM KAPATILDI!\n\n{eski_islem}\n\n🔗 {SITE_URL}")
+                bilinen_islemler = guncel_set
+                
         except Exception as e:
             print("Kontrol hatasi:", e)
         time.sleep(20)
