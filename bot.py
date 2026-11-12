@@ -48,13 +48,11 @@ def islemleri_oku(page):
     return islemler
 
 with sync_playwright() as p:
-    # Render 512MB RAM siniri icin dusuk bellek modunda tarayici baslatma
     b = p.chromium.launch(
         headless=True,
-        args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu", "--single-process"]
+        args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"]
     )
     page = b.new_page()
-    # RAM tasarrufu icin resimleri ve fontlari engelle
     page.route("**/*.{png,jpg,jpeg,gif,webp,svg,woff,woff2}", lambda route: route.abort())
     
     page.goto(SITE_URL, wait_until="domcontentloaded", timeout=60000)
